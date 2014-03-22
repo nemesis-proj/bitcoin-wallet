@@ -18,6 +18,11 @@
 package de.schildbach.wallet.util;
 
 import java.math.BigInteger;
+import java.security.GeneralSecurityException;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,7 +56,7 @@ public final class PaymentProtocol
 	public static final String MIMETYPE_PAYMENTACK = "application/bitcoin-paymentack"; // BIP 71
 
 	public static Protos.PaymentRequest createPaymentRequest(final BigInteger amount, @Nonnull final Address toAddress, final String memo,
-			final String paymentUrl)
+			final String paymentUrl, final X509Certificate[] certificateChain, final PrivateKey privateKey)
 	{
 		if (amount != null && amount.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0)
 			throw new IllegalArgumentException("amount too big for protobuf: " + amount);
@@ -71,6 +76,46 @@ public final class PaymentProtocol
 
 		final Protos.PaymentRequest.Builder paymentRequest = Protos.PaymentRequest.newBuilder();
 		paymentRequest.setSerializedPaymentDetails(paymentDetails.build().toByteString());
+
+		if (privateKey != null)
+		{
+			long start = System.currentTimeMillis();
+
+			try
+			{
+				System.out.println("====================================================!!!!====");
+				final Protos.X509Certificates.Builder certificates = Protos.X509Certificates.newBuilder();
+				for (final Certificate certificate : certificateChain)
+				{
+					System.out.println("====================== " + certificate);
+					certificates.addCertificate(ByteString.copyFrom(certificate.getEncoded()));
+				}
+
+				// TODO maybe cut cert chain?
+
+				paymentRequest.setPkiData(certificates.build().toByteString());
+
+				final String algorithm;
+				if (privateKey.getAlgorithm().equalsIgnoreCase("RSA"))
+					algorithm = "SHA256withRSA";
+				else
+					throw new IllegalStateException(privateKey.getAlgorithm());
+
+				final Signature signature = Signature.getInstance(algorithm);
+				signature.initSign(privateKey);
+				signature.update(paymentRequest.build().toByteArray());
+
+				paymentRequest.setPkiType("x509+sha256");
+
+				paymentRequest.setSignature(ByteString.copyFrom(signature.sign()));
+
+				System.out.println("========================== signed, took " + (System.currentTimeMillis() - start) + " ms");
+			}
+			catch (final GeneralSecurityException x)
+			{
+				throw new RuntimeException(x);
+			}
+		}
 
 		return paymentRequest.build();
 	}
