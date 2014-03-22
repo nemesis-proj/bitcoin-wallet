@@ -45,4 +45,33 @@ public class Bluetooth
 
 		return mac.toString();
 	}
+
+	public static boolean isBluetoothUrl(final String url)
+	{
+		return url != null && GenericUtils.startsWithIgnoreCase(url, "bt:");
+	}
+
+	public static String getBluetoothMac(final String url)
+	{
+		if (!isBluetoothUrl(url))
+			throw new IllegalArgumentException(url);
+
+		final int queryIndex = url.indexOf('/');
+		if (queryIndex != -1)
+			return url.substring(3, queryIndex);
+		else
+			return url.substring(3);
+	}
+
+	public static String getBluetoothQuery(final String url)
+	{
+		if (!isBluetoothUrl(url))
+			throw new IllegalArgumentException(url);
+
+		final int queryIndex = url.indexOf('/');
+		if (queryIndex != -1)
+			return url.substring(queryIndex);
+		else
+			return "/";
+	}
 }
