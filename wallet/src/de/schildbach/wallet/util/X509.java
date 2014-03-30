@@ -50,27 +50,12 @@ import com.google.common.base.Joiner;
  */
 public class X509
 {
-	public static KeyStore trustedCaStore() throws GeneralSecurityException
-	{
-		try
-		{
-			// ICS only!
-			final KeyStore keystore = KeyStore.getInstance("AndroidCAStore");
-			keystore.load(null, null);
-			return keystore;
-		}
-		catch (final IOException x)
-		{
-			throw new KeyStoreException(x);
-		}
-	}
-
-	public static TrustAnchor trustAnchor(final List<? extends Certificate> certificateChain) throws GeneralSecurityException
+	public static TrustAnchor trustAnchor(final List<? extends Certificate> certificateChain, final KeyStore trustedKeyStore) throws GeneralSecurityException
 	{
 		final CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
 		final CertPath certificatePath = certificateFactory.generateCertPath(certificateChain);
 
-		final PKIXParameters pkixParams = new PKIXParameters(trustedCaStore());
+		final PKIXParameters pkixParams = new PKIXParameters(trustedKeyStore);
 		pkixParams.setRevocationEnabled(false);
 
 		final CertPathValidator pathValidator = CertPathValidator.getInstance("PKIX");

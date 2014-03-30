@@ -61,6 +61,7 @@ import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 import com.google.bitcoin.core.Address;
 import com.google.bitcoin.core.Wallet;
+import com.google.bitcoin.protocols.payments.TrustStoreLoader;
 import com.google.bitcoin.uri.BitcoinURI;
 
 import de.schildbach.wallet.Configuration;
@@ -245,7 +246,8 @@ public final class RequestCoinsFragment extends SherlockFragment
 								if (signingCertificateChain == null || signingCertificateChain.length == 0)
 									throw new RuntimeException("Could not get certificate chain for alias " + signingKeyAlias);
 
-								signingTrustAnchor = X509.trustAnchor(Arrays.asList(signingCertificateChain));
+								signingTrustAnchor = X509.trustAnchor(Arrays.asList(signingCertificateChain),
+										new TrustStoreLoader.DefaultTrustStoreLoader().getKeyStore());
 							}
 							catch (final Exception x)
 							{

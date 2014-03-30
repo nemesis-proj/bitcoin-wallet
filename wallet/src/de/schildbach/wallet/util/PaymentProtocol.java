@@ -17,6 +17,7 @@
 
 package de.schildbach.wallet.util;
 
+import java.io.FileNotFoundException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -53,6 +54,7 @@ import com.google.bitcoin.core.Address;
 import com.google.bitcoin.core.ScriptException;
 import com.google.bitcoin.core.Transaction;
 import com.google.bitcoin.protocols.payments.PaymentRequestException;
+import com.google.bitcoin.protocols.payments.TrustStoreLoader;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
 import com.google.common.collect.Lists;
@@ -239,7 +241,7 @@ public final class PaymentProtocol
 			CertPath path = certificateFactory.generateCertPath(certs);
 
 			// Retrieves the most-trusted CAs from keystore.
-			PKIXParameters params = new PKIXParameters(X509.trustedCaStore());
+			PKIXParameters params = new PKIXParameters(new TrustStoreLoader.DefaultTrustStoreLoader().getKeyStore());
 			// Revocation not supported in the current version.
 			params.setRevocationEnabled(false);
 
@@ -312,6 +314,10 @@ public final class PaymentProtocol
 		{
 			// Something went wrong during hashing (yes, despite the name, this does not mean the sig was invalid).
 			throw new PaymentRequestException.PkiVerificationException(e);
+		}
+		catch (FileNotFoundException e)
+		{
+			throw new RuntimeException(e);
 		}
 		catch (GeneralSecurityException e)
 		{
